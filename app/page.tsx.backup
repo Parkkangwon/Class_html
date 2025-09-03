@@ -1,0 +1,402 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { Search, Heart, Eye, Recycle, User, LogOut, Leaf, Settings, Smartphone } from "lucide-react"
+import { TimeRemaining } from "@/components/auction/time-remaining"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/contexts/auth-context"
+import { NotificationSystem } from "@/components/notifications/notification-system"
+import { AuctionUpdates } from "@/components/real-time/auction-updates"
+import { ImpactTracker } from "@/components/sustainability/impact-tracker"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { useMobile } from "@/hooks/use-mobile"
+import { EcoAchievements } from "@/components/gamification/eco-achievements"
+import dynamic from 'next/dynamic';
+interface AdvancedSearchProps {
+  onSearchChange: (filters: any) => void;
+}
+
+const AdvancedSearch = dynamic<AdvancedSearchProps>(
+  () => import('@/components/search/advanced-search').then((mod) => ({
+    default: mod.AdvancedSearch
+  })),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-16 bg-muted/20 animate-pulse rounded-md" />
+  }
+)
+
+const mockAuctions = [
+  {
+    id: "1",
+    title: "북유럽 스타일 원목 다이닝 테이블",
+    description: "4인용 원목 다이닝 테이블입니다. 깨끗하게 관리되어 재사용하기 좋은 상태입니다.",
+    category: "가구/테이블",
+    brand: "이케아",
+    thumbnail_url: "/vintage-wooden-dining-table.png",
+    current_price: 85000,
+    instant_buy_price: 120000,
+    min_increment: 5000,
+    end_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+    condition_grade: "A",
+    bid_count: 8,
+    view_count: 156,
+    status: "active",
+  },
+  {
+    id: "2",
+    title: "빈티지 패브릭 쿠션 세트 (4개)",
+    description: "핸드메이드 패브릭 쿠션 4개 세트입니다. 거실 인테리어에 완벽합니다.",
+    category: "소품/쿠션",
+    brand: "핸드메이드",
+    thumbnail_url: "/fabric-cushions-set.png",
+    current_price: 25000,
+    instant_buy_price: 40000,
+    min_increment: 2000,
+    end_time: new Date(Date.now() + 1.5 * 24 * 60 * 60 * 1000),
+    condition_grade: "B",
+    bid_count: 12,
+    view_count: 89,
+    status: "active",
+  },
+  {
+    id: "3",
+    title: "델롱기 에스프레소 커피머신",
+    description: "거의 새것 같은 상태의 델롱기 커피머신입니다. 박스와 설명서 포함.",
+    category: "가전/커피머신",
+    brand: "델롱기",
+    thumbnail_url: "/delonghi-coffee-machine.png",
+    current_price: 140000,
+    instant_buy_price: 180000,
+    min_increment: 10000,
+    end_time: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    condition_grade: "A",
+    bid_count: 5,
+    view_count: 234,
+    status: "scheduled",
+  },
+  {
+    id: "4",
+    title: "수제 도자기 머그컵 컬렉션",
+    description: "작가가 직접 만든 도자기 머그컵 6개 세트입니다. 각각 다른 디자인으로 제작되었습니다.",
+    category: "도예/공예",
+    brand: "작가작품",
+    thumbnail_url: "/ceramic-mug-collection.png",
+    current_price: 45000,
+    instant_buy_price: 65000,
+    min_increment: 3000,
+    end_time: new Date(Date.now() + 0.5 * 24 * 60 * 60 * 1000),
+    condition_grade: "S",
+    bid_count: 18,
+    view_count: 342,
+    status: "active",
+  },
+  {
+    id: "5",
+    title: "친환경 대나무 텀블러 세트",
+    description: "지속가능한 대나무 소재로 만든 텀블러 3개 세트입니다. 환경을 생각하는 선택!",
+    category: "소품/텀블러",
+    brand: "에코라이프",
+    thumbnail_url: "/eco-bamboo-tumbler-set.png",
+    current_price: 18000,
+    instant_buy_price: 28000,
+    min_increment: 1000,
+    end_time: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    condition_grade: "S",
+    bid_count: 22,
+    view_count: 187,
+    status: "active",
+  },
+  {
+    id: "6",
+    title: "모던 추상화 캔버스 작품",
+    description: "신진 작가의 추상화 작품입니다. 거실이나 사무실 인테리어에 적합합니다.",
+    category: "회화/캔버스",
+    brand: "신진작가",
+    thumbnail_url: "/sustainable-abstract-art.png",
+    current_price: 95000,
+    instant_buy_price: 130000,
+    min_increment: 5000,
+    end_time: new Date(Date.now() + 2.5 * 24 * 60 * 60 * 1000),
+    condition_grade: "S",
+    bid_count: 7,
+    view_count: 156,
+    status: "active",
+  },
+]
+
+const categories = [
+  "전체",
+  "가구/테이블",
+  "가구/쇼파",
+  "소품/패브릭",
+  "소품/쿠션",
+  "소품/텀블러",
+  "소품/머그컵",
+  "가전/커피머신",
+  "조형/오브제",
+  "가구/디자인",
+  "패션/의류",
+  "도예/공예",
+  "회화/캔버스",
+]
+const brands = ["전체", "이케아", "한샘", "에코라이프", "핸드메이드", "작가작품", "델롱기", "신진작가", "빈티지"]
+const conditions = ["전체", "S", "A", "B", "C"]
+
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("ko-KR").format(price) + "원"
+}
+
+
+function getStatusBadge(status: string, endTime: Date) {
+  const now = new Date()
+  const diff = endTime.getTime() - now.getTime()
+
+  if (status === "scheduled") {
+    return <Badge variant="secondary">예정</Badge>
+  } else if (diff <= 0) {
+    return <Badge variant="destructive">종료</Badge>
+  } else if (diff <= 60 * 60 * 1000) {
+    // Less than 1 hour
+    return <Badge className="bg-red-500 text-white animate-pulse">마감임박</Badge>
+  } else {
+    return <Badge className="bg-green-500 text-white">진행중</Badge>
+  }
+}
+
+export default function AuctionListingsPage() {
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const isMobile = useMobile()
+  const [filteredAuctions, setFilteredAuctions] = useState(mockAuctions)
+  const [watchlist, setWatchlist] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(false)
+  const [imagesLoaded, setImagesLoaded] = useState<Set<string>>(new Set())
+  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(true)
+  const [carbonSaved, setCarbonSaved] = useState(0)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowWelcomeAnimation(false)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCarbonSaved((prev) => prev + Math.floor(Math.random() * 5) + 1)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFilteredAuctions((prev) => [...prev]) // Force re-render for countdown
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleSearchChange = useCallback((filters: any) => {
+    console.log("Nafal handleSearchChange called with filters:", filters)
+    setIsLoading(true)
+
+    // Clear any existing timeout to prevent multiple simultaneous searches
+    const timeoutId = setTimeout(() => {
+      console.log("Nafal Processing search filters")
+
+      const filtered = mockAuctions.filter((auction) => {
+        const matchesSearch =
+          auction.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+          auction.brand.toLowerCase().includes(filters.query.toLowerCase())
+        const matchesCategory = filters.category === "전체" || auction.category.includes(filters.category)
+        const matchesCondition = filters.condition === "전체" || auction.condition_grade === filters.condition
+        const matchesPrice =
+          auction.current_price >= filters.priceRange[0] && auction.current_price <= filters.priceRange[1]
+        const matchesInstantBuy = !filters.hasInstantBuy || auction.instant_buy_price
+
+        // Mock sustainability score calculation
+        const sustainabilityScore =
+          auction.condition_grade === "S"
+            ? 95
+            : auction.condition_grade === "A"
+              ? 85
+              : auction.condition_grade === "B"
+                ? 70
+                : 60
+        const matchesSustainability = sustainabilityScore >= filters.sustainabilityScore
+
+        const now = new Date()
+        const hoursRemaining = (auction.end_time.getTime() - now.getTime()) / (1000 * 60 * 60)
+        const matchesEndingSoon = !filters.endingSoon || hoursRemaining <= 24
+
+        return (
+          matchesSearch &&
+          matchesCategory &&
+          matchesCondition &&
+          matchesPrice &&
+          matchesInstantBuy &&
+          matchesSustainability &&
+          matchesEndingSoon
+        )
+      })
+
+      // Enhanced sorting logic
+      filtered.sort((a, b) => {
+        switch (filters.sortBy) {
+          case "마감임박":
+            return a.end_time.getTime() - b.end_time.getTime()
+          case "신규":
+            return b.id.localeCompare(a.id)
+          case "인기":
+            return b.view_count - a.view_count
+          case "낮은가격":
+            return a.current_price - b.current_price
+          case "높은가격":
+            return b.current_price - a.current_price
+          case "지속가능성":
+            const scoreA = a.condition_grade === "S" ? 95 : a.condition_grade === "A" ? 85 : 70
+            const scoreB = b.condition_grade === "S" ? 95 : b.condition_grade === "A" ? 85 : 70
+            return scoreB - scoreA
+          default:
+            return 0
+        }
+      })
+
+      console.log("Nafal Search completed, found", filtered.length, "results")
+      setFilteredAuctions(filtered)
+      setIsLoading(false)
+    }, 300)
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      console.log("Nafal Cleaning up search timeout")
+      clearTimeout(timeoutId)
+    }
+  }, []) // Keep empty dependency array since mockAuctions is static
+
+  const toggleWatchlist = useCallback((auctionId: string) => {
+    setWatchlist((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(auctionId)) {
+        newSet.delete(auctionId)
+      } else {
+        newSet.add(auctionId)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleBidClick = useCallback(
+    (auctionId: string) => {
+      router.push(`/auction/${auctionId}`)
+    },
+    [router],
+  )
+
+  const handleInstantBuyClick = useCallback(
+    (auctionId: string) => {
+      router.push(`/auction/${auctionId}?action=instant-buy`)
+    },
+    [router],
+  )
+
+  const handleImageLoad = useCallback((auctionId: string) => {
+    setImagesLoaded((prev) => new Set([...prev, auctionId]))
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {showWelcomeAnimation && (
+        <div className="fixed inset-0 bg-green-600/90 z-50 flex items-center justify-center animate-fade-in">
+          <div className="text-center text-white">
+            <Recycle className="h-16 w-16 mx-auto mb-4 animate-spin" />
+            <h2 className="text-3xl font-serif font-black mb-2">지구를 위한 선택</h2>
+            <p className="text-lg">자원순환으로 만드는 지속가능한 미래</p>
+          </div>
+        </div>
+      </div>
+      {isMobile ? (
+        <div className="flex items-center text-xs text-gray-500 space-x-1">
+          {user && <NotificationSystem />}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Smartphone className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>메뉴</SheetTitle>
+              </SheetHeader>
+              <div className="p-3 flex-1 flex flex-col space-y-4 mt-6">
+                <Button variant="ghost" onClick={() => router.push("/")} className="justify-start">
+                  경매
+                </Button>
+                <Button variant="ghost" onClick={() => router.push("/watchlist")} className="justify-start">
+                  관심목록
+                </Button>
+                <Button variant="ghost" onClick={() => router.push("/my-bids")} className="justify-start">
+                  내 입찰
+                </Button>
+                <Button variant="ghost" onClick={() => router.push("/support")} className="justify-start">
+                  고객지원
+                </Button>
+                {user && (
+                  <Button variant="ghost" onClick={() => router.push("/sustainability")} className="justify-start">
+                    <Leaf className="h-4 w-4 mr-2" />
+                    지속가능성
+                  </Button>
+                )}
+                {user && (
+                  <Button variant="ghost" onClick={() => router.push("/dashboard")} className="justify-start">
+                    대시보드
+                  </Button>
+                )}
+                {user && (
+                  <Button variant="ghost" onClick={() => router.push("/profile")} className="justify-start">
+                    <User className="h-4 w-4 mr-2" />
+                    {user.nickname}
+                  </Button>
+                )}
+                {user && user.role === "admin" && (
+                  <Button variant="ghost" onClick={() => router.push("/admin")} className="justify-start">
+                    <Settings className="h-4 w-4 mr-2" />
+                    관리자
+                  </Button>
+                )}
+                {user && (
+                  <Button variant="ghost" onClick={logout} className="justify-start">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    로그아웃
+                  </Button>
+                )}
+                {!user && <Button onClick={() => router.push("/login")}>로그인</Button>}
+              </div>
+            </SheetContent>
+          </Sheet>
+            <div className="hidden lg:block w-80">
+              <div className="sticky top-8">
+                <AuctionUpdates />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-40">
+        <Button
+          className="h-14 w-14 rounded-full bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          onClick={() => router.push("/products/register")}
+        >
+          <Recycle className="h-6 w-6" />
+        </Button>
+      </div>
+    </div>
+  )
+}
