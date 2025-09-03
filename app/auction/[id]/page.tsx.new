@@ -1,0 +1,367 @@
+"use client"
+
+import { useState } from "react"
+import { useParams } from "next/navigation"
+import { BiddingSystem } from "@/components/bidding/bidding-system"
+import { useAuth } from "@/contexts/auth-context"
+import { mockAuctionDetail } from "@/data/mock-auction-detail"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Heart, Share2, Eye, Clock, Star, Leaf, Recycle, Droplets, Zap } from "lucide-react"
+import { AuctionHeader } from "@/components/auction/auction-header"
+import Image from "next/image"
+
+export default function AuctionDetailPage() {
+  const params = useParams()
+  const { user } = useAuth()
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [isWatched, setIsWatched] = useState(false)
+  const [currentPrice, setCurrentPrice] = useState(mockAuctionDetail.current_price)
+
+  const handleBidPlaced = (amount: number) => {
+    setCurrentPrice(amount)
+  }
+
+  const handleInstantBuy = () => {
+    alert("즉시구매가 완료되었습니다!")
+  }
+
+  const environmentalImpact = {
+    co2Saved: Math.floor(currentPrice * 0.002),
+    waterSaved: Math.floor(currentPrice * 0.05),
+    wastePrevented: Math.floor(currentPrice * 0.001),
+    energySaved: Math.floor(currentPrice * 0.01),
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AuctionHeader />
+      <div className="pt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Environmental Impact Banner */}
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">🌍 지구를 위한 현명한 선택</h2>
+                <p className="text-green-100">이 상품을 선택하면 환경에 미치는 긍정적 영향:</p>
+              </div>
+              <Recycle className="h-16 w-16 text-green-200" />
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Leaf className="h-5 w-5 mr-1" />
+                  <span className="text-2xl font-bold">{environmentalImpact.co2Saved}kg</span>
+                </div>
+                <p className="text-sm text-green-100">CO₂ 절약</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Droplets className="h-5 w-5 mr-1" />
+                  <span className="text-2xl font-bold">{environmentalImpact.waterSaved}L</span>
+                </div>
+                <p className="text-sm text-green-100">물 절약</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Recycle className="h-5 w-5 mr-1" />
+                  <span className="text-2xl font-bold">{environmentalImpact.wastePrevented}kg</span>
+                </div>
+                <p className="text-sm text-green-100">폐기물 방지</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Zap className="h-5 w-5 mr-1" />
+                  <span className="text-2xl font-bold">{environmentalImpact.energySaved}kWh</span>
+                </div>
+                <p className="text-sm text-green-100">에너지 절약</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Images */}
+            <div className="space-y-4">
+              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
+                <Image
+                  src={mockAuctionDetail.images[selectedImage] || "/placeholder.svg"}
+                  alt={mockAuctionDetail.title}
+                  width={600}
+                  height={600}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {mockAuctionDetail.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square bg-white rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImage === index ? "border-green-500" : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <Image
+                      src={image || "/placeholder.svg"}
+                      alt={`${mockAuctionDetail.title} ${index + 1}`}
+                      width={150}
+                      height={150}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Column - Product Info */}
+            <div className="space-y-6">
+              {/* Title and Status */}
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl font-bold text-gray-900">{mockAuctionDetail.title}</h1>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary">{mockAuctionDetail.category}</Badge>
+                      <Badge variant="outline">{mockAuctionDetail.condition}</Badge>
+                      <Badge className="bg-green-500 text-white">
+                        <Recycle className="h-3 w-3 mr-1" />
+                        자원순환
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsWatched(!isWatched)}
+                      className={isWatched ? "text-red-500" : "text-gray-500"}
+                    >
+                      <Heart className={`h-5 w-5 ${isWatched ? "fill-current" : ""}`} />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Share2 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <Eye className="h-4 w-4" />
+                    <span>조회 234</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-4 w-4" />
+                    <span>입찰 {mockAuctionDetail.bidCount}회</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seller Info */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 font-semibold">{mockAuctionDetail.seller.name.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{mockAuctionDetail.seller.name}</p>
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <span>{mockAuctionDetail.seller.rating}</span>
+                          </div>
+                          <span>•</span>
+                          <span>판매 {mockAuctionDetail.seller.totalSales}건</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      판매자 정보
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Bidding System */}
+              <BiddingSystem
+                auctionId={mockAuctionDetail.id}
+                currentPrice={currentPrice}
+                minIncrement={mockAuctionDetail.min_increment}
+                instantBuyPrice={mockAuctionDetail.instant_buy_price}
+                endTime={mockAuctionDetail.end_time}
+                isUserVerified={user?.isVerified || false}
+                hasPaymentMethod={user?.hasPaymentMethod || false}
+                onBidPlaced={handleBidPlaced}
+                onInstantBuy={handleInstantBuy}
+              />
+            </div>
+          </div>
+
+          {/* Product Details Tabs */}
+          <div className="mt-12">
+            <Tabs defaultValue="description" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="description">상품 정보</TabsTrigger>
+                <TabsTrigger value="specifications">상세 스펙</TabsTrigger>
+                <TabsTrigger value="sustainability">지속가능성</TabsTrigger>
+                <TabsTrigger value="history">입찰 내역</TabsTrigger>
+                <TabsTrigger value="policies">정책 안내</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="description" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>상품 스토리</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-gray-700 leading-relaxed">{mockAuctionDetail.story}</p>
+                    <div>
+                      <h4 className="font-semibold mb-2">구성품</h4>
+                      <ul className="list-disc list-inside space-y-1 text-gray-600">
+                        {mockAuctionDetail.included.map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="specifications" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>상세 스펙</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(mockAuctionDetail.specifications).map(([key, value]) => (
+                        <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-gray-600 capitalize">{key}</span>
+                          <span className="font-medium">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>입찰 내역</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {mockAuctionDetail.bidHistory.map((bid) => (
+                        <div key={bid.id} className="flex justify-between items-center py-3 border-b border-gray-100">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-medium">{bid.username}</span>
+                            {bid.isAutoBid && (
+                              <Badge variant="secondary" className="text-xs">
+                                자동
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">{new Intl.NumberFormat("ko-KR").format(bid.amount)}원</p>
+                            <p className="text-xs text-gray-500">{bid.timestamp.toLocaleString("ko-KR")}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="policies" className="mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Object.entries(mockAuctionDetail.policies).map(([key, value]) => (
+                    <Card key={key}>
+                      <CardHeader>
+                        <CardTitle className="text-lg capitalize">
+                          {key === "return" && "반품 정책"}
+                          {key === "warranty" && "보증 정책"}
+                          {key === "shipping" && "배송 정책"}
+                          {key === "payment" && "결제 정책"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-700">{value}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="sustainability" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Leaf className="h-5 w-5 text-green-600" />
+                      환경 영향 및 지속가능성
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-3 text-green-700">재활용 정보</h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li className="flex items-center gap-2">
+                            <Recycle className="h-4 w-4 text-green-500" />
+                            재활용 가능 소재 95% 이상
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Leaf className="h-4 w-4 text-green-500" />
+                            친환경 마감재 사용
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Droplets className="h-4 w-4 text-blue-500" />
+                            물 기반 코팅제 적용
+                          </li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3 text-green-700">탄소 발자국</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>제조 시 배출량:</span>
+                            <span className="font-medium">12.5kg CO₂</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>운송 시 배출량:</span>
+                            <span className="font-medium">2.1kg CO₂</span>
+                          </div>
+                          <div className="flex justify-between text-green-600 font-semibold">
+                            <span>재사용으로 절약:</span>
+                            <span>-{environmentalImpact.co2Saved}kg CO₂</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-green-800">지속가능한 선택의 의미</h4>
+                      <p className="text-sm text-green-700">
+                        이 상품을 선택함으로써 새로운 제품 생산을 위한 자원 채취를 줄이고, 폐기물 발생을 방지하며,
+                        순환경제에 기여하게 됩니다. 작은 선택이 지구 환경에 큰 변화를 만듭니다.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
