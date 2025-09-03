@@ -1,0 +1,49 @@
+// Mock implementation of Next.js navigation hooks
+const mockPush = jest.fn();
+const mockBack = jest.fn();
+const mockForward = jest.fn();
+const mockPrefetch = jest.fn();
+const mockReplace = jest.fn();
+const mockRefresh = jest.fn();
+
+// Mock useRouter
+export const useRouter = jest.fn().mockImplementation(() => ({
+  push: mockPush,
+  back: mockBack,
+  forward: mockForward,
+  prefetch: mockPrefetch,
+  replace: mockReplace,
+  refresh: mockRefresh,
+}));
+
+// Mock useSearchParams
+export const useSearchParams = jest.fn().mockImplementation(() => {
+  const params = new URLSearchParams('tab=faq');
+  return {
+    get: (key: string) => params.get(key),
+    getAll: jest.fn(),
+    has: jest.fn(),
+    keys: jest.fn(),
+    values: jest.fn(),
+    entries: jest.fn(),
+    forEach: jest.fn(),
+    toString: jest.fn(),
+  };
+});
+
+// Mock usePathname
+export const usePathname = jest.fn().mockImplementation(() => '/support');
+
+// Mock other navigation functions
+export const redirect = jest.fn();
+export const notFound = jest.fn();
+
+// Export the mocks for testing
+export const navigationMocks = {
+  mockPush,
+  mockBack,
+  mockForward,
+  mockPrefetch,
+  mockReplace,
+  mockRefresh,
+};
